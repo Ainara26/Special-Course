@@ -1,5 +1,5 @@
 from cobra.io import read_sbml_model
-model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iJN1463.xml')
+model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iJO1366.xml')
 # Specific reaction names/keywords for ED pathway
 ed_keywords = ["phosphogluconate", "KDPG", "glucose-6-phosphate"]
 
