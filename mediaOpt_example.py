@@ -38,8 +38,8 @@ TRUE_OPTIMUM = 3.32237 #best results of growth
 SEED = 12345
 torch.manual_seed(seed=SEED)
 
-#We created a function called get_next_batch_of_designs. 
-    #The goal of this function is to o select the next set of experimental conditions (designs) that optimize log Expected Improvement (pLogEI).
+#We created a function called get_next_batch_of_designs 
+    #The goal of this function is to select the next set of experimental conditions (designs) that optimize log Expected Improvement (pLogEI).
     #This function generates a batch of new experiments (q points) based on previously tested conditions (x,y).
 def get_next_batch_of_designs(
     x: torch.Tensor, #past experimental conditions
