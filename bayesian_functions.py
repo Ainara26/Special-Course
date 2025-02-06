@@ -15,7 +15,7 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import tqdm
 
 #to select the test function based on the dimensionality
-def get_test_function(D, bounds)
+def get_test_function(D, bounds):
     if D==6:
         print("Using Hartmann Function for Optimization")
         return Hartmann(dim=6, bounds=bounds, negate=True, noise_std=0.05)
@@ -27,7 +27,7 @@ def get_test_function(D, bounds)
         return None
 
 #train of surrogate model
-def train_gp_model(x,y,D)
+def train_gp_model(x,y,D):
     if D==6:
         gp_model = SingleTaskGP(
         train_X=x,
@@ -55,12 +55,13 @@ def get_next_batch_of_designs(
     seed: int | None = None, #random seed for reproducibility
 ) -> tuple[torch.Tensor, float]: #returns (batch of designs, log-scale acquisition value)
     
-    #handling random seed
     if seed is not None:
         torch.manual_seed(seed=seed)
     
     #transposes it to match the format required by BoTorch (d x 2)-> each row will have the min and max of each component respectively
     bounds_t = torch.Tensor(bounds).T
+    D = x.shape[1]
+    gp_model = train_gp_model(x, y, D)
 
     #acquisition function
     sampler = SobolQMCNormalSampler(torch.Size([q]), seed=seed)
@@ -84,7 +85,7 @@ def get_next_batch_of_designs(
     return candidates, float(joint_acq)
 
 #bayesian loop
-def bayesian_optimization():
+def bayesian_optimization(x, y, bounds, Q, rounds, seed, test_function):
     torch.manual_seed(seed)
     best_kpis = []
 

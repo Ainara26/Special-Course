@@ -9,12 +9,21 @@ MEDIA=model.medium
 BOUNDS=[(0.0, 1000.0)] * len(MEDIA)
 Q=12
 D=len(MEDIA)
-TRUTH = Ackley(dim=D, bounds=BOUNDS, negate=True, noise_std=0.05)
-TRUE_ARGOPTIMUM = (40, 20, 20, 20, 20, 20, 20, 0, 0, 0, 0, 0, 0, 20, 20, 20, 20, 0, 0, 0, 20)
-TRUE_OPTIMUM = 17.292327443315337
 SEED = 12345
-torch.manual_seed(seed=SEED)
-exec bayesian_functions.py 
+ROUNDS = 5
+# Step 1: Select the right test function
+TEST_FUNCTION = get_test_function(D, BOUNDS)
+
+# Step 2: Generate Initial Data
+bounds_tensor = torch.Tensor(BOUNDS).T
+x_init = torch.rand(Q, D)  # Random initial conditions
+y_init = TEST_FUNCTION.forward(x_init, noise=True).unsqueeze(-1) if TEST_FUNCTION else torch.rand(Q, 1)
+
+# Step 3: Run Bayesian Optimization
+x_final, y_final, best_kpis = bayesian_optimization(x_init, y_init, BOUNDS, Q, ROUNDS, SEED, TEST_FUNCTION)
+
+# Step 4: Plot KPI Progress
+plot_kpi_progress(best_kpis)
 
 
 
