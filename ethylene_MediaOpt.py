@@ -6,7 +6,9 @@ import bayesian_functions
 model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iJO1366.xml')
 
 MEDIA=model.medium
-BOUNDS=[(0.0, 1000.0)] * len(MEDIA)
+BOUNDS = []
+for exchange, max_value in MEDIA.items():
+    BOUNDS.append((0.0, max_value))
 Q=12
 D=len(MEDIA)
 SEED = 12345
@@ -24,6 +26,9 @@ x_final, y_final, best_kpis = bayesian_optimization(x_init, y_init, BOUNDS, Q, R
 
 # Step 4: Plot KPI Progress
 plot_kpi_progress(best_kpis)
+
+print("Selected Test Function:", TEST_FUNCTION)
+
 
 
 

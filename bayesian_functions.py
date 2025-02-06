@@ -30,21 +30,14 @@ def get_test_function(D, bounds):
 
 #train of surrogate model
 def train_gp_model(x, y, D):
-    """
-    Trains a Gaussian Process model.
-    - Uses SingleTaskGP for D ≤ 25.
-    - Uses SaasGP (faster) for D > 25.
-    """
-    # ✅ Ensure `y` has shape (N, 1)
     if y.dim() == 1:
         y = y.unsqueeze(-1)
 
     if D <= 25:
-        gp_model = SingleTaskGP(train_X=x, train_Y=y)  # ✅ DO NOT add likelihood here
+        gp_model = SingleTaskGP(train_X=x, train_Y=y)  
     else:
-        gp_model = SaasGP(train_X=x, train_Y=y)  # ✅ DO NOT add likelihood here
+        gp_model = SaasGP(train_X=x, train_Y=y)  
 
-    # ✅ Remove likelihood from `mll`
     mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)  
     fit_gpytorch_mll(mll)
     
