@@ -89,23 +89,27 @@ def get_next_batch_of_designs(
     return candidates, float(joint_acq)
 
 def main():
+    #Converts bounds to a tensor, so each row represents min and max values for a media component.
     bounds_tensor = torch.Tensor(BOUNDS).T
+    #Generation of the first batch of experiments, using the sobol sampling (random method)
     first_x = draw_sobol_samples(
         bounds=bounds_tensor,
         q=Q,
         n=1,
         seed=SEED,
     ).squeeze(0)
-    rounds = 2
-    x = first_x
-    y = torch.Tensor([])
-    best = []
-    pbar = tqdm(range(rounds))
-    next_x = first_x
+    rounds = 2 #number of optimization rounds
+    x = first_x #store experimental conditions
+    y = torch.Tensor([]) #empty tensor to store the KPI data
+    best = [] #to keep track of the best KPI values found so far
+    pbar = tqdm(range(rounds)) #progress bar for tracking rounds
+    next_x = first_x #start with the first batch
     for r in pbar:
-        next_y = TRUTH.forward(next_x, noise=True).unsqueeze(-1)
-        y = torch.concat([y, next_y])
+        next_y = TRUTH.forward(next_x, noise=True).unsqueeze(-1) #evaluates the KPI values (y) for the current batch (next_x), adding experimental noise
+        y = torch.concat([y, next_y]) #updates y with the new KPI values.
+            #in each round, we test Q new media compositions and store the KPI values in y--> x and y grows as new experiments are added
         print(y.shape)
+        #we call get_next_batch_of_designs--> the optimizer suggests the next batch of Q=12 experiments
         next_x, _ = get_next_batch_of_designs(
             x=x,
             y=y,
@@ -113,12 +117,14 @@ def main():
             q=Q,
             seed=SEED,
         )
-        best_so_far = float(y.max())
-        msg = f"Best after round {r}: " + str(best_so_far)
-        pbar.set_description(msg)
-        best.append([r, best_so_far])
-        x = torch.concat([x, next_x])
-    print(x)
+
+        best_so_far = float(y.max()) #best KPI so far
+        msg = f"Best after round {r}: " + str(best_so_far) #print the message
+        pbar.set_description(msg) #update the tracking bar
+        best.append([r, best_so_far]) #store the best KPI
+
+        x = torch.concat([x, next_x]) #add new conditions to the dataset
+    print(x) #list of all tested media compositions
 
 
 if __name__ == "__main__":
