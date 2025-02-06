@@ -1,4 +1,6 @@
 import torch
+import numpy as np
+import matplotlib.pyplot as plt
 from botorch.acquisition import qLogExpectedImprovement
 from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
@@ -125,7 +127,22 @@ def main():
 
         x = torch.concat([x, next_x]) #add new conditions to the dataset
     print(x) #list of all tested media compositions
+    plot_kpi_progress(best)
 
+#representation of how KPI variates over the rounds
+def plot_kpi_progress(best):
+    best = torch.tensor(best)  # Convert to tensor for easy plotting
+    rounds = best[:, 0]  # Extract round numbers
+    best_kpis = best[:, 1]  # Extract best KPI values
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(rounds, best_kpis, marker="o", linestyle="-", color="b", label="Best KPI")
+    plt.xlabel("Optimization Round")
+    plt.ylabel("Best KPI Found")
+    plt.title("Bayesian Optimization Progress: Best KPI Over Rounds")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 if __name__ == "__main__":
     main()
