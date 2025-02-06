@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import gpytorch 
 from botorch.acquisition import qLogExpectedImprovement
 from botorch.fit import fit_gpytorch_mll
 from botorch.models import SingleTaskGP
@@ -13,6 +14,7 @@ from botorch.test_functions.synthetic import Ackley
 from botorch.utils.sampling import draw_sobol_samples
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import tqdm
+
 
 #to select the test function based on the dimensionality
 def get_test_function(D, bounds):
@@ -27,23 +29,25 @@ def get_test_function(D, bounds):
         return None
 
 #train of surrogate model
-def train_gp_model(x,y,D):
-    if D==6:
-        gp_model = SingleTaskGP(
-        train_X=x,
-        train_Y=y,
-        input_transform=Normalize(d=x.shape[1]),
-        outcome_transform=Standardize(m=1),
-        )
+def train_gp_model(x, y, D):
+    """
+    Trains a Gaussian Process model.
+    - Uses SingleTaskGP for D ≤ 25.
+    - Uses SaasGP (faster) for D > 25.
+    """
+    # ✅ Ensure `y` has shape (N, 1)
+    if y.dim() == 1:
+        y = y.unsqueeze(-1)
+
+    if D <= 25:
+        gp_model = SingleTaskGP(train_X=x, train_Y=y)  # ✅ DO NOT add likelihood here
     else:
-        gp_model = SaasFullyBayesianSingleTaskGP(
-        train_X=x,
-        train_Y=y,
-        input_transform=Normalize(d=x.shape[1]),
-        outcome_transform=Standardize(m=1),
-        )
-    mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)
+        gp_model = SaasGP(train_X=x, train_Y=y)  # ✅ DO NOT add likelihood here
+
+    # ✅ Remove likelihood from `mll`
+    mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)  
     fit_gpytorch_mll(mll)
+    
     return gp_model
 
 #to obtain the next set of experiments
