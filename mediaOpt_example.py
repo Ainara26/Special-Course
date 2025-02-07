@@ -29,7 +29,7 @@ BOUNDS = [(0.0, 1.0)] * len(MEDIA) #minimum (0) and maximum (1) boundaries for e
 Q = 12 #number of batch of experiments that run in parallel
 D = len(MEDIA) #dimensionality of the optimisation problem (in this case, the 6 media components)
 
-#Hartmann function to have reference values for testing
+#Hartmann function that acts as our simulated objective function
 TRUTH = Hartmann(dim=D, bounds=BOUNDS, negate=True, noise_std=0.05)
 TRUE_ARGOPTIMUM = (0.20169, 0.150011, 0.476874, 0.275332, 0.311652, 0.6573) #best possible combination of media components
 TRUE_OPTIMUM = 3.32237 #best results of growth
@@ -38,7 +38,7 @@ TRUE_OPTIMUM = 3.32237 #best results of growth
 SEED = 12345
 torch.manual_seed(seed=SEED)
 
-#We created a function called get_next_batch_of_designs 
+#We created a function called get_next_batch_of_designs for defining the Bayesian Optimization Process
     #The goal of this function is to select the next set of experimental conditions (designs) that optimize log Expected Improvement (pLogEI).
     #This function generates a batch of new experiments (q points) based on previously tested conditions (x,y).
 def get_next_batch_of_designs(

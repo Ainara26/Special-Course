@@ -1,33 +1,55 @@
 import torch
 from bayesian_functions import get_test_function, bayesian_optimization, plot_kpi_progress
 from cobra.io import read_sbml_model
-
 import bayesian_functions
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+from botorch.acquisition import qLogExpectedImprovement
+from botorch.fit import fit_gpytorch_mll
+from botorch.models import SingleTaskGP
+from botorch.test_functions.synthetic import Ackley
+from botorch.models.transforms.input import Normalize
+from botorch.models.transforms.outcome import Standardize
+from botorch.optim import optimize_acqf
+from botorch.sampling import SobolQMCNormalSampler
+from botorch.test_functions.synthetic import Hartmann
+from botorch.utils.sampling import draw_sobol_samples
+from gpytorch.mlls import ExactMarginalLogLikelihood
+from tqdm import tqdm
+
 model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iJO1366.xml')
 
+#Define the Search Space
 MEDIA=model.medium
-BOUNDS = []
-for exchange, max_value in MEDIA.items():
-    BOUNDS.append((0.0, max_value))
+BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
 Q=12
 D=len(MEDIA)
-SEED = 12345
 ROUNDS = 5
-# Step 1: Select the right test function
-TEST_FUNCTION = get_test_function(D, BOUNDS)
+SEED = 12345
+torch.manual_seed(SEED)
 
-# Step 2: Generate Initial Data
+#Define objective function
+def compute_growth_rate(media_composition):
+    for i, key in enumerate(MEDIA.keys()):
+        model.medium[key] = float(media_composition[i].item())
+
+    solution = model.optimize()
+    return torch.tensor([[solution.objective_value]])
+
+#Train the surrogate model
 bounds_tensor = torch.Tensor(BOUNDS).T
-x_init = torch.rand(Q, D)  # Random initial conditions
-y_init = TEST_FUNCTION.forward(x_init, noise=True).unsqueeze(-1) if TEST_FUNCTION else torch.rand(Q, 1)
+x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
+y = torch.cat([compute_growth_rate(xi) for xi in x])
+gp_model = SingleTaskGP(
+        train_X=x,
+        train_Y=y,
+        input_transform=Normalize(d=x.shape[1]),
+        outcome_transform=Standardize(m=1),
+        )
+mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)
+fit_gpytorch_mll(mll)
 
-# Step 3: Run Bayesian Optimization
-x_final, y_final, best_kpis = bayesian_optimization(x_init, y_init, BOUNDS, Q, ROUNDS, SEED, TEST_FUNCTION)
-
-# Step 4: Plot KPI Progress
-plot_kpi_progress(best_kpis)
-
-print("Selected Test Function:", TEST_FUNCTION)
 
 
 
