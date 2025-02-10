@@ -1,6 +1,5 @@
 import torch
 from cobra.io import read_sbml_model
-import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from botorch.acquisition import qLogExpectedImprovement
