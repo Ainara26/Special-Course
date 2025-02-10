@@ -16,7 +16,7 @@ from botorch.utils.sampling import draw_sobol_samples
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import tqdm
 
-model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iJO1366.xml')
+model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/modified_model.xml')
 
 #Define the Search Space
 MEDIA=model.medium
@@ -31,14 +31,17 @@ torch.manual_seed(SEED)
 def compute_growth_rate(media_composition):
     for i, key in enumerate(MEDIA.keys()):
         model.medium[key] = float(media_composition[i].item())
-
+    model.objective = model.reactions.EFE_m
     solution = model.optimize()
-    return torch.tensor([[solution.objective_value]])
+    E_production = solution.objective_value  # Ethylene flux
+
+    return torch.tensor([[E_production]])
+
 
 #Train the surrogate model
 bounds_tensor = torch.Tensor(BOUNDS).T
-x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
-y = torch.cat([compute_growth_rate(xi) for xi in x])
+x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0).to(torch.double)
+y = torch.cat([compute_growth_rate(xi) for xi in x]).to(torch.double)
 gp_model = SingleTaskGP(
         train_X=x,
         train_Y=y,
@@ -48,12 +51,15 @@ gp_model = SingleTaskGP(
 mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)
 fit_gpytorch_mll(mll)
 
+print("Initial x values (media compositions):\n", x)
+print("Initial y values (growth rates):\n", y)
+
 #Define and Optimize acquisition function
     #define
 sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED) 
-qlei=qLogExpectedImprovement(model=gp_model, best_f=y.max, sampler=sampler)
+qlei=qLogExpectedImprovement(model=gp_model, best_f=float(y.max().item()), sampler=sampler)
     #optimize to fund the next batch of experiments
-next_x, _=optimize_acqf(acq_function=qlei,bounds=bounds_tensor, num_restarts=ROUNDS,raw_samples=D)
+next_x, _=optimize_acqf(acq_function=qlei,bounds=bounds_tensor,q=Q, num_restarts=ROUNDS,raw_samples=D)
 
 #Run new experiments and update the GP model
 next_y=torch.cat([compute_growth_rate(xi) for xi in next_x])
