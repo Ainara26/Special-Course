@@ -1,7 +1,5 @@
 import torch
-from bayesian_functions import get_test_function, bayesian_optimization, plot_kpi_progress
 from cobra.io import read_sbml_model
-import bayesian_functions
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -48,6 +46,23 @@ gp_model = SingleTaskGP(
         outcome_transform=Standardize(m=1),
         )
 mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)
+fit_gpytorch_mll(mll)
+
+#Define and Optimize acquisition function
+    #define
+sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED) 
+qlei=qLogExpectedImprovement(model=gp_model, best_f=x.max, sampler=sampler)
+    #optimize to fund the next batch of experiments
+next_x, _=optimize_acqf(acq_function=qlei,bounds=bounds_tensor, num_restarts=ROUNDS,raw_samples=D)
+
+#Run new experiments and update the GP model
+next_y=torch.cat([compute_growth_rate(xi) for xi in next_x])
+
+    #update the data set
+x = torch.cat([x, next_x])
+y = torch.cat([y, next_y])
+    #retrain the GP model with new data
+gp_model.set_train_data(x, y, strict=False)
 fit_gpytorch_mll(mll)
 
 
