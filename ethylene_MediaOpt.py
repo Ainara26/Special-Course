@@ -27,20 +27,22 @@ D=len(MEDIA)
 ROUNDS = 2
 SEED = 12345
 torch.manual_seed(SEED)
-print (MEDIA)
 
 #Define objective function
-def compute_growth_rate(media_composition):
+def compute_ethylene_production(media_composition):
     with model:
         solution=model.optimize()
-        model.objective=model.reactions.R_EFE_m
+        model.objective=model.reactions.EFE_m
         E_production = solution.objective_value
-    return torch.tensor([E_production])
+        if np.isnan(E_production) or np.isinf(E_production):
+            print("Warning: Invalid E_production value, returning NaN")
+            return torch.tensor([[float('nan')]])  # Return NaN if invalid
+    return torch.tensor([[E_production]])
 
 #Train the surrogate model
 bounds_tensor = torch.Tensor(BOUNDS).T
 x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
-y = torch.cat([compute_growth_rate(xi) for xi in x])
+y = torch.cat([compute_ethylene_production(xi) for xi in x], dim=0)
 gp_model = SingleTaskGP(
         train_X=x,
         train_Y=y,
@@ -50,27 +52,47 @@ gp_model = SingleTaskGP(
 mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)
 fit_gpytorch_mll(mll)
 
-print("Initial x values (media compositions):\n", x)
-print("Initial y values (growth rates):\n", y)
-
+best_kpi_values=[]
 #Define and Optimize acquisition function
     #define
 sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED) 
 qlei=qLogExpectedImprovement(model=gp_model, best_f=float(y.max().item()), sampler=sampler)
     #optimize to fund the next batch of experiments
-next_x, _=optimize_acqf(acq_function=qlei,bounds=bounds_tensor,q=Q, num_restarts=ROUNDS,raw_samples=D)
 
-#Run new experiments and update the GP model
-next_y=torch.cat([compute_growth_rate(xi) for xi in next_x])
+#Update data with the new rounds
+for round_num in range(ROUNDS):
+    print(f"Round {round_num + 1} optimization:")
 
-    #update the data set
-x = torch.cat([x, next_x])
-y = torch.cat([y, next_y])
-    #retrain the GP model with new data
-gp_model.set_train_data(x, y, strict=False)
-fit_gpytorch_mll(mll)
+    # Optimize the acquisition function to find the next batch of experiments
+    next_x, _ = optimize_acqf(
+        acq_function=qlei,
+        bounds=bounds_tensor,
+        q=Q,
+        num_restarts=10,
+        raw_samples=50,
+    )
+    
+    # Run new experiments and calculate the corresponding y values (KPI values)
+    next_y = torch.cat([compute_ethylene_production(xi) for xi in next_x], dim=0)
 
+    # Update the dataset with the new data
+    x = torch.cat([x, next_x], dim=0)
+    y = torch.cat([y, next_y], dim=0)
 
+    # Retrain the GP model with new data
+    gp_model.set_train_data(x, y, strict=False)
+    fit_gpytorch_mll(mll)
+    
+    # Track the best KPI value (the highest EFE_m production) for this round
+    best_kpi_values.append(y.max().item())
+
+# Plot the improvement of the KPI over the rounds
+plt.plot(range(1, ROUNDS + 1), best_kpi_values, marker='o')
+plt.xlabel('Optimization Round')
+plt.ylabel('Best EFE_m Production (KPI)')
+plt.title('Improvement of EFE_m Production Over Optimization Rounds')
+plt.grid(True)
+plt.show()
 
 
 
