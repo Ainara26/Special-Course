@@ -51,7 +51,7 @@ fit_gpytorch_mll(mll)
 #Define and Optimize acquisition function
     #define
 sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED) 
-qlei=qLogExpectedImprovement(model=gp_model, best_f=x.max, sampler=sampler)
+qlei=qLogExpectedImprovement(model=gp_model, best_f=y.max, sampler=sampler)
     #optimize to fund the next batch of experiments
 next_x, _=optimize_acqf(acq_function=qlei,bounds=bounds_tensor, num_restarts=ROUNDS,raw_samples=D)
 
