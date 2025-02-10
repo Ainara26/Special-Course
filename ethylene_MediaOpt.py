@@ -20,41 +20,27 @@ model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/
 
 #Define the Search Space
 MEDIA=model.medium
-#BOUNDS=[(1.0, 40.0)]* len(MEDIA)
-BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
+BOUNDS=[(0.0, 1.0)] * len(MEDIA) 
+#BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
 Q=12
 D=len(MEDIA)
-ROUNDS = 5
+ROUNDS = 2
 SEED = 12345
 torch.manual_seed(SEED)
+print (MEDIA)
 
 #Define objective function
-def compute_growth_rate(x, y):
-    # Assuming 'x' is time and 'y' is the dependent variable (e.g., concentration)
-    growth_rates = []
-    for i in range(1, len(x)):
-        # Compute growth rate between consecutive points
-        delta_y = y[i] - y[i-1]
-        delta_x = x[i] - x[i-1]
-        growth_rate = delta_y / delta_x  # Simplified growth rate calculation
-        growth_rates.append(growth_rate)
-    return growth_rates
-
 def compute_growth_rate(media_composition):
     with model:
-        for i, key in enumerate(MEDIA.keys()):
-            model.medium[key] = float(media_composition[i].item())
-        model.objective = model.reactions.EFE_m
-        solution = model.optimize()
-        E_production = solution.objective_value  # Ethylene flux
-
-    return torch.tensor([[E_production]])
-
+        solution=model.optimize()
+        model.objective=model.reactions.R_EFE_m
+        E_production = solution.objective_value
+    return torch.tensor([E_production])
 
 #Train the surrogate model
 bounds_tensor = torch.Tensor(BOUNDS).T
-x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0).to(torch.double)
-y = torch.cat([compute_growth_rate(xi) for xi in x]).to(torch.double)
+x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
+y = torch.cat([compute_growth_rate(xi) for xi in x])
 gp_model = SingleTaskGP(
         train_X=x,
         train_Y=y,
