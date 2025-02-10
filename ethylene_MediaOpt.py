@@ -16,7 +16,7 @@ from botorch.utils.sampling import draw_sobol_samples
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from tqdm import tqdm
 
-model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/modified_model.xml')
+model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iJO1366_V0.xml')
 
 #Define the Search Space
 MEDIA=model.medium
@@ -29,11 +29,13 @@ torch.manual_seed(SEED)
 
 #Define objective function
 def compute_growth_rate(media_composition):
-    for i, key in enumerate(MEDIA.keys()):
-        model.medium[key] = float(media_composition[i].item())
-    model.objective = model.reactions.EFE_m
-    solution = model.optimize()
-    E_production = solution.objective_value  # Ethylene flux
+    with model:
+        model.medium=YEPDmedium
+        for i, key in enumerate(MEDIA.keys()):
+            model.medium[key] = float(media_composition[i].item())
+        model.objective = model.reactions.EFE_m
+        solution = model.optimize()
+        E_production = solution.objective_value  # Ethylene flux
 
     return torch.tensor([[E_production]])
 
