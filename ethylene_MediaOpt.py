@@ -33,9 +33,6 @@ def compute_ethylene_production(media_composition):
         solution=model.optimize()
         model.objective=model.reactions.EFE_m
         E_production = solution.objective_value
-        if np.isnan(E_production) or np.isinf(E_production):
-            print("Warning: Invalid E_production value, returning NaN")
-            return torch.tensor([[float('nan')]])  # Return NaN if invalid
     return torch.tensor([[E_production]])
 
 #Train the surrogate model
