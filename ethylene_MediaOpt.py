@@ -53,7 +53,7 @@ best_kpi_values=[]
     #define
 sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED) 
 qlei=qLogExpectedImprovement(model=gp_model, best_f=float(y.max().item()), sampler=sampler)
-    #optimize to fund the next batch of experiments
+    #optimize to find the next batch of experiments
 
 #Update data with the new rounds
 for round_num in range(ROUNDS):
