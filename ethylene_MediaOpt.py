@@ -41,7 +41,7 @@ x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
 y = torch.cat([compute_ethylene_production(xi) for xi in x], dim=0)
 gp_model = SingleTaskGP(
         train_X=x,
-        train_Y=y,
+        train_Y=y.squeeze(-1),
         input_transform=Normalize(d=x.shape[1]),
         outcome_transform=Standardize(m=1),
         )
@@ -69,7 +69,8 @@ for round_num in range(ROUNDS):
     )
     
     # Run new experiments and calculate the corresponding y values (KPI values)
-    next_y = torch.cat([compute_ethylene_production(xi) for xi in next_x], dim=0)
+    next_y = torch.cat([compute_ethylene_production(xi).unsqueeze(-1) for xi in next_x], dim=0)
+
 
     # Update the dataset with the new data
     x = torch.cat([x, next_x], dim=0)
