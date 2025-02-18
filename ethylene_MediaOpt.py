@@ -19,8 +19,8 @@ model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/
 
 #Define the Search Space
 MEDIA=model.medium
-BOUNDS=[(0.0, 1.0)] * len(MEDIA) 
-#BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
+#BOUNDS=[(0.0, 1.0)] * len(MEDIA) 
+BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
 Q=12
 D=len(MEDIA)
 ROUNDS = 2
@@ -58,7 +58,7 @@ qlei=qLogExpectedImprovement(model=gp_model, best_f=float(y.max().item()), sampl
 #Update data with the new rounds
 for round_num in range(ROUNDS):
     print(f"Round {round_num + 1} optimization:")
-
+    #__import__("pdb").set_trace()
     # Optimize the acquisition function to find the next batch of experiments
     next_x, _ = optimize_acqf(
         acq_function=qlei,
