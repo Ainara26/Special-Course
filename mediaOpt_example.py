@@ -65,6 +65,11 @@ def get_next_batch_of_designs(
         outcome_transform=Standardize(m=1),
     )
 
+    prediction=gp_model(x)
+    mean=prediction.mean
+    print(f"Mean of GP model:",mean.shape)
+    print(f"Shape of y:",y.shape)
+
     #Trains the GP model to accurately approximate the objective function.
     mll = ExactMarginalLogLikelihood(gp_model.likelihood, gp_model)
     fit_gpytorch_mll(mll)
