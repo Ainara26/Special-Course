@@ -21,10 +21,10 @@ model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/
 
 #Define the Search Space
 MEDIA=model.medium
-#BOUNDS=[(0.0, 1.0)] * len(MEDIA) 
 BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
 Q=12
 D=len(MEDIA)
+print(f"Length of media",D)
 ROUNDS = 2
 SEED = 12345
 torch.manual_seed(SEED)
@@ -35,18 +35,19 @@ def compute_ethylene_production(media_composition):
         solution=model.optimize()
         model.objective=model.reactions.EFE_m
         E_production = solution.objective_value
-    return torch.tensor([[E_production]])
+    return torch.tensor([[E_production]], dtype=torch.float64)
 
 #Train the surrogate model
+torch.set_default_dtype(torch.float64)
 bounds_tensor = torch.Tensor(BOUNDS).T
 x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
-y = torch.cat([compute_ethylene_production(xi) for xi in x], dim=0).squeeze(0)
+y = torch.cat([compute_ethylene_production(xi) for xi in x], dim=0).view(-1,1)
 print(f"Dimensions of x: {x.shape}")
 print(f"Dimensions of y: {y.shape}")
 
 gp_model = SingleTaskGP(
         train_X=x,
-        train_Y=y.view(-1,1),
+        train_Y=y,
         input_transform=Normalize(d=x.shape[1]),
         outcome_transform=Standardize(m=1),
         )
@@ -56,13 +57,10 @@ fit_gpytorch_mll(mll)
 best_kpi_values=[]
 #Define and Optimize acquisition function
     #define
-sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED) 
+sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED)
 qlei=qLogExpectedImprovement(model=gp_model, best_f=float(y.max().item()), sampler=sampler)
     #optimize to find the next batch of experiments
 
-predictions = gp_model(x)
-print(f"Mean shape: {predictions.mean.shape}")  # Should be [n, 1]
-print(f"Variance shape: {predictions.variance.shape}")  # Should be [n, 1]
 
 __import__("pdb").set_trace()
 
@@ -79,17 +77,20 @@ for round_num in range(ROUNDS):
     )
     
     # Run new experiments and calculate the corresponding y values (KPI values)
-    next_y = torch.cat([compute_ethylene_production(xi) for xi in next_x], dim=0).squeeze(0)
+    next_y = torch.cat([compute_ethylene_production(xi) for xi in next_x], dim=0).view(-1,1)
+
+    print(f"Next_x and next_y shapes:", next_x.shape,next_y.shape)
+
+    __import__("pdb").set_trace()
 
 
     # Update the dataset with the new data
     x = torch.cat([x, next_x], dim=0)
-    y = torch.cat([y, next_y], dim=0).view(-1,1)
+    y = torch.cat([y, next_y], dim=0)
 
-    print(f"x shape: {x.shape}")  # Expect [n + Q, D]
+    print(f"x shape: {x.shape}")
     print(f"y shape: {y.shape}")
 
-    __import__("pdb").set_trace()
 
     # Retrain the GP model with new data
     gp_model.set_train_data(x, y, strict=False)
@@ -105,6 +106,3 @@ plt.ylabel('Best EFE_m Production (KPI)')
 plt.title('Improvement of EFE_m Production Over Optimization Rounds')
 plt.grid(True)
 plt.show()
-
-
-
