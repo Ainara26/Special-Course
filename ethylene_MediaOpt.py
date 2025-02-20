@@ -31,17 +31,30 @@ torch.manual_seed(SEED)
 
 #Define objective function
 def compute_ethylene_production(media_composition):
+    # Update the model's medium with the provided media_composition
     with model:
-        solution=model.optimize()
-        model.objective=model.reactions.EFE_m
+        # Set model's medium to match the media_composition
+        for i, component in enumerate(MEDIA.keys()):
+            model.medium[component] = media_composition[i]
+        
+        # Optimize the model to get the ethylene production value
+        solution = model.optimize()
+        
+        # Set the objective to ethylene production reaction (EFE_m)
+        model.objective = model.reactions.EFE_m
+        
+        # Extract the objective value
         E_production = solution.objective_value
+    
     return torch.tensor([[E_production]], dtype=torch.float64)
+
 
 #Train the surrogate model
 torch.set_default_dtype(torch.float64)
 bounds_tensor = torch.Tensor(BOUNDS).T
 x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
-y = torch.cat([compute_ethylene_production(xi) for xi in x], dim=0).view(-1,1)
+y = torch.Tensor([])
+y = torch.concat([compute_ethylene_production(xi) for xi in x], dim=0).view(-1,1)
 print(f"Dimensions of x: {x.shape}")
 print(f"Dimensions of y: {y.shape}")
 
@@ -58,11 +71,16 @@ best_kpi_values=[]
 #Define and Optimize acquisition function
     #define
 sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED)
-qlei=qLogExpectedImprovement(model=gp_model, best_f=float(y.max().item()), sampler=sampler)
+qlei = qLogExpectedImprovement(
+        model=gp_model,
+        best_f=y.max(),
+        sampler=sampler,
+        )
+
     #optimize to find the next batch of experiments
 
 
-__import__("pdb").set_trace()
+#__import__("pdb").set_trace()
 
 #Update data with the new rounds
 for round_num in range(ROUNDS):
@@ -72,32 +90,29 @@ for round_num in range(ROUNDS):
         acq_function=qlei,
         bounds=bounds_tensor,
         q=Q,
-        num_restarts=10,
-        raw_samples=50,
+        num_restarts=20,
+        raw_samples=100,
     )
     
     # Run new experiments and calculate the corresponding y values (KPI values)
-    next_y = torch.cat([compute_ethylene_production(xi) for xi in next_x], dim=0).view(-1,1)
-
+    next_y = torch.concat([compute_ethylene_production(xi) for xi in next_x], dim=0).view(-1,1)
     print(f"Next_x and next_y shapes:", next_x.shape,next_y.shape)
 
-    __import__("pdb").set_trace()
+    #__import__("pdb").set_trace()
 
 
     # Update the dataset with the new data
-    x = torch.cat([x, next_x], dim=0)
-    y = torch.cat([y, next_y], dim=0)
+    x = torch.concat([x, next_x], dim=0)
+    y = torch.concat([y, next_y], dim=0)
 
     print(f"x shape: {x.shape}")
     print(f"y shape: {y.shape}")
-
-
-    # Retrain the GP model with new data
-    gp_model.set_train_data(x, y, strict=False)
-    fit_gpytorch_mll(mll)
     
     # Track the best KPI value (the highest EFE_m production) for this round
     best_kpi_values.append(y.max().item())
+
+print(x)
+
 
 # Plot the improvement of the KPI over the rounds
 plt.plot(range(1, ROUNDS + 1), best_kpi_values, marker='o')
