@@ -29,25 +29,22 @@ ROUNDS = 2
 SEED = 12345
 torch.manual_seed(SEED)
 
-#Define objective function
-def compute_ethylene_production(media_composition):
-    # Update the model's medium with the provided media_composition
-    with model:
-        # Set model's medium to match the media_composition
-        for i, component in enumerate(MEDIA.keys()):
-            model.medium[component] = media_composition[i]
-        
-        # Optimize the model to get the ethylene production value
-        solution = model.optimize()
-        
-        # Set the objective to ethylene production reaction (EFE_m)
-        model.objective = model.reactions.EFE_m
-        
-        # Extract the objective value
-        E_production = solution.objective_value
-    
-    return torch.tensor([[E_production]], dtype=torch.float64)
+#convert tensor to a media dictionary for the model
+def tensor_to_media_dict(tensor, media_template):
+    media_keys = list(media_template.keys())
+    return {media_keys[i]: float(tensor[i].item()) for i in range(len(media_keys))}
 
+#Define objective function
+def compute_ethylene_production(media_tensor):
+    media_composition = tensor_to_media_dict(media_tensor, model.medium)
+    with model:
+        model.medium = media_composition  # Set the medium
+        model.objective = model.reactions.EFE_m  # Set the objective
+        solution = model.optimize()  # Optimize the model
+        ethylene_production = solution.objective_value  # Extract ethylene production flux
+    
+    # Return the ethylene production as a PyTorch tensor
+    return torch.tensor([[ethylene_production]], dtype=torch.float64)
 
 #Train the surrogate model
 torch.set_default_dtype(torch.float64)
