@@ -14,14 +14,13 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 
 #__import__("pdb").set_trace()
 
-model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/modified_model.xml')
+model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iLC858.sbml')
 
 #Define the Search Space
 MEDIA=model.medium
 BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
 Q=12
 D=len(MEDIA)
-print(f"Length of media",D)
 ROUNDS = 2
 SEED = 12345
 torch.manual_seed(SEED)
@@ -32,25 +31,23 @@ def tensor_to_media_dict(tensor, media_template):
     return {media_keys[i]: float(tensor[i].item()) for i in range(len(media_keys))}
 
 #Define objective function
-def compute_ethylene_production(media_tensor):
+def compute_max_growth(media_tensor):
     media_composition = tensor_to_media_dict(media_tensor, model.medium)
     with model:
         model.medium = media_composition  # Set the medium
-        model.objective = model.reactions.EFE_m  # Set the objective
+        #automatically the objective reaction is set to be the biomass (growth rate)
         solution = model.optimize()  # Optimize the model
-        ethylene_production = solution.objective_value  # Extract ethylene production flux
+        max_theoretical_growth = solution.objective_value  # Extract max theoretical growth
     
     # Return the ethylene production as a PyTorch tensor
-    return torch.tensor([[ethylene_production]], dtype=torch.float64)
+    return torch.tensor([[max_theoretical_growth]], dtype=torch.float64)
 
 #Train the surrogate model
 torch.set_default_dtype(torch.float64)
 bounds_tensor = torch.Tensor(BOUNDS).T
 x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
 y = torch.Tensor([])
-y = torch.concat([compute_ethylene_production(xi) for xi in x], dim=0).view(-1,1)
-print(f"Dimensions of x: {x.shape}")
-print(f"Dimensions of y: {y.shape}")
+y = torch.concat([compute_max_growth(xi) for xi in x], dim=0).view(-1,1)
 
 gp_model = SingleTaskGP(
         train_X=x,
@@ -89,18 +86,12 @@ for round_num in range(ROUNDS):
     )
     
     # Run new experiments and calculate the corresponding y values (KPI values)
-    next_y = torch.concat([compute_ethylene_production(xi) for xi in next_x], dim=0).view(-1,1)
-    print(f"Next_x and next_y shapes:", next_x.shape,next_y.shape)
-
-    #__import__("pdb").set_trace()
+    next_y = torch.concat([compute_max_growth(xi) for xi in next_x], dim=0).view(-1,1)
 
 
     # Update the dataset with the new data
     x = torch.concat([x, next_x], dim=0)
     y = torch.concat([y, next_y], dim=0)
-
-    print(f"x shape: {x.shape}")
-    print(f"y shape: {y.shape}")
     
     # Track the best KPI value (the highest EFE_m production) for this round
     best_kpi_values.append(y.max().item())
@@ -111,7 +102,7 @@ print(x)
 # Plot the improvement of the KPI over the rounds
 plt.plot(range(1, ROUNDS + 1), best_kpi_values, marker='o')
 plt.xlabel('Optimization Round')
-plt.ylabel('Best EFE_m Production (KPI)')
-plt.title('Improvement of EFE_m Production Over Optimization Rounds')
+plt.ylabel('Maximum theoretical growth')
+plt.title('Improvement of u_max of Vibrio Over Optimization Rounds')
 plt.grid(True)
 plt.show()
