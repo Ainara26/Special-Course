@@ -11,4 +11,4 @@ for reaction_id, flux in media.items():
     if "_e" in metabolite.id: 
         print(f"{reaction_id}: {metabolite.name} ({flux} mmol/gDW/h)")
 
-print(f"Max theoretical growth:", model.objective)
+print(f"Max theoretical growth:", model.optimize().objective_value)
