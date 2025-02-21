@@ -19,6 +19,7 @@ model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/
 #Define the Search Space
 MEDIA=model.medium
 BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
+#BOUNDS = [(0.1, 10.0) for _ in MEDIA.values()]
 Q=12
 D=len(MEDIA)
 ROUNDS = 2
