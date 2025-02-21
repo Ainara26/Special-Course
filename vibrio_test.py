@@ -11,4 +11,8 @@ for reaction_id, flux in media.items():
     if "_e" in metabolite.id: 
         print(f"{reaction_id}: {metabolite.name} ({flux} mmol/gDW/h)")
 
+# Set all exchange reactions to high values to test unconstrained growth
+for exchange in model.medium.keys():
+    model.medium[exchange] = 1000.0
+
 print(f"Max theoretical growth:", model.optimize().objective_value)
