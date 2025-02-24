@@ -63,7 +63,6 @@ fit_gpytorch_mll(mll)
 
 best_kpi_values=[]
 #Define and Optimize acquisition function
-    #define
 sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED)
 qlei = qLogExpectedImprovement(
         model=gp_model,
@@ -71,10 +70,6 @@ qlei = qLogExpectedImprovement(
         sampler=sampler,
         )
 
-    #optimize to find the next batch of experiments
-
-
-#__import__("pdb").set_trace()
 
 #Update data with the new rounds
 for round_num in range(ROUNDS):
@@ -92,8 +87,6 @@ for round_num in range(ROUNDS):
     next_y = torch.concat([compute_ethylene_production(xi) for xi in next_x], dim=0).view(-1,1)
     print(f"Next_x and next_y shapes:", next_x.shape,next_y.shape)
 
-    #__import__("pdb").set_trace()
-
 
     # Update the dataset with the new data
     x = torch.concat([x, next_x], dim=0)
@@ -107,7 +100,6 @@ for round_num in range(ROUNDS):
 
 print(x)
 print(y)
-print(f"Medium:", model.medium)
 
 
 # Plot the improvement of the KPI over the rounds
