@@ -95,9 +95,10 @@ print(y)
 
 
 # Plot the improvement of the KPI over the rounds
-plt.plot(range(1, ROUNDS + 1), best_kpi_values, marker='o')
-plt.xlabel('Optimization Round')
-plt.ylabel('Best EFE_m Production (KPI)')
-plt.title('Improvement of EFE_m Production Over Optimization Rounds')
-plt.grid(True)
+plt.plot(range(1, len(best_kpi_values) + 1), best_kpi_values, marker='o', color='red', linestyle='-', linewidth=2, markersize=8)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+plt.title('Improvement of EFE_m Production Over Optimization Rounds', fontsize=14, fontweight='bold', color='black')
+plt.xlabel('Optimization Round', fontsize=12, color='black')
+plt.ylabel('Best EFE_m Production (KPI)', fontsize=12, color='black')
+plt.gcf().set_facecolor('whitesmoke')
 plt.show()
