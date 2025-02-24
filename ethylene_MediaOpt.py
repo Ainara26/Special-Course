@@ -21,7 +21,6 @@ MEDIA=model.medium
 BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
 Q=12
 D=len(MEDIA)
-print(f"Length of media",D)
 ROUNDS = 3
 SEED = 12345
 torch.manual_seed(SEED)
@@ -49,8 +48,6 @@ bounds_tensor = torch.Tensor(BOUNDS).T
 x = draw_sobol_samples(bounds=bounds_tensor, q=Q, n=1, seed=SEED).squeeze(0)
 y = torch.Tensor([])
 y = torch.concat([compute_ethylene_production(xi) for xi in x], dim=0).view(-1,1)
-print(f"Dimensions of x: {x.shape}")
-print(f"Dimensions of y: {y.shape}")
 
 gp_model = SingleTaskGP(
         train_X=x,
@@ -85,15 +82,10 @@ for round_num in range(ROUNDS):
     
     # Run new experiments and calculate the corresponding y values (KPI values)
     next_y = torch.concat([compute_ethylene_production(xi) for xi in next_x], dim=0).view(-1,1)
-    print(f"Next_x and next_y shapes:", next_x.shape,next_y.shape)
-
 
     # Update the dataset with the new data
     x = torch.concat([x, next_x], dim=0)
     y = torch.concat([y, next_y], dim=0)
-
-    print(f"x shape: {x.shape}")
-    print(f"y shape: {y.shape}")
     
     # Track the best KPI value (the highest EFE_m production) for this round
     best_kpi_values.append(y.max().item())
