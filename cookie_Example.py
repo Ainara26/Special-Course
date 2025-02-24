@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import pandas as pd
 from botorch.utils.sampling import draw_sobol_samples
 from botorch.models import SingleTaskGP
 from botorch.models.transforms.input import Normalize
@@ -9,6 +10,7 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 from botorch.acquisition import qLogExpectedImprovement
 from botorch.sampling import SobolQMCNormalSampler
 from botorch.optim import optimize_acqf
+import matplotlib.pyplot as plt
 
 temp = torch.Tensor([])
 time = torch.Tensor([])
@@ -79,6 +81,14 @@ for round_num in range(ROUNDS):
     # Track the best KPI value (the highest EFE_m production) for this round
     best_kpi_values.append(y.max().item())
 
-round_x = torch.round(x, decimals=0, out=None)
+last_x=x[-1]
+print(f"Best temperature and time for baking:", last_x)
 
-print(round_x)
+#Representation of Improvement over the rounds
+plt.plot(range(1, len(best_kpi_values) + 1), best_kpi_values, marker='o', color='red', linestyle='-', linewidth=2, markersize=8)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+plt.title('Improvement of Cookies Quality Over Optimization Rounds', fontsize=14, fontweight='bold', color='black')
+plt.xlabel('Optimization Round', fontsize=12, color='black')
+plt.ylabel('Cookies Quality', fontsize=12, color='black')
+plt.gcf().set_facecolor('whitesmoke')
+plt.show()
