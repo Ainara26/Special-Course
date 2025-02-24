@@ -22,7 +22,7 @@ BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
 Q=12
 D=len(MEDIA)
 print(f"Length of media",D)
-ROUNDS = 2
+ROUNDS = 3
 SEED = 12345
 torch.manual_seed(SEED)
 
