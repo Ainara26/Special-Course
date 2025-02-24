@@ -95,7 +95,6 @@ for round_num in range(ROUNDS):
     # Run new experiments and calculate the corresponding y values (KPI values)
     next_y = torch.concat([compute_max_growth(xi) for xi in next_x], dim=0).view(-1,1)
 
-
     # Update the dataset with the new data
     x = torch.concat([x, next_x], dim=0)
     y = torch.concat([y, next_y], dim=0)
