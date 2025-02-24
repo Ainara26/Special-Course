@@ -79,4 +79,6 @@ for round_num in range(ROUNDS):
     # Track the best KPI value (the highest EFE_m production) for this round
     best_kpi_values.append(y.max().item())
 
-print(x)
+round_x = torch.round(x, decimals=0, out=None)
+
+print(round_x)
