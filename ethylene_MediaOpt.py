@@ -106,6 +106,8 @@ for round_num in range(ROUNDS):
     best_kpi_values.append(y.max().item())
 
 print(x)
+print(y)
+print(f"Medium:", model.medium)
 
 
 # Plot the improvement of the KPI over the rounds

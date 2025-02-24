@@ -17,9 +17,15 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iLC858.sbml')
 
 #Define the Search Space
-MEDIA=model.medium
-BOUNDS = [(0.0, max_value) for max_value in MEDIA.values()]
-#BOUNDS = [(0.1, 10.0) for _ in MEDIA.values()]
+MEDIA = model.medium
+MEDIA['EX_Na+_e'] = 20.0
+MEDIA['EX_Acetate_e']=2.5
+MEDIA['EX_NH3_e']=1.0
+MEDIA['EX_K+_e']=0.2
+MEDIA['EX_Mg_e']=0.2
+
+BOUNDS = [(0.0, 10*value) for value in MEDIA.values()]
+
 Q=12
 D=len(MEDIA)
 ROUNDS = 2
@@ -99,7 +105,7 @@ for round_num in range(ROUNDS):
 
 print(x)
 print(y)
-
+print(f"Medium:", model.medium)
 
 # Plot the improvement of the KPI over the rounds
 plt.plot(range(1, ROUNDS + 1), best_kpi_values, marker='o')
