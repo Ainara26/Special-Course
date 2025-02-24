@@ -12,7 +12,13 @@ for reaction_id, flux in media.items():
         print(f"{reaction_id}: {metabolite.name} ({flux} mmol/gDW/h)")
 
 # Set all exchange reactions to high values to test max growth
-for exchange in model.medium.keys():
-    model.medium[exchange] = 1000.0
-
-print(f"Max theoretical growth:", model.optimize().objective_value)
+with model:
+    MEDIA = model.medium
+    MEDIA['EX_Na+_e'] = 20.0
+    MEDIA['EX_Acetate_e']=2.5
+    MEDIA['EX_NH3_e']=1.0
+    MEDIA['EX_K+_e']=0.2
+    MEDIA['EX_Mg_e']=0.2
+    for exchange in model.medium.keys():
+        model.medium[exchange] = 1000.0
+    print(f"Max theoretical growth:", model.optimize().objective_value)

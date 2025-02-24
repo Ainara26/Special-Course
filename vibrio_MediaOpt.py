@@ -100,17 +100,19 @@ for round_num in range(ROUNDS):
     x = torch.concat([x, next_x], dim=0)
     y = torch.concat([y, next_y], dim=0)
     
-    # Track the best KPI value (the highest EFE_m production) for this round
-    best_kpi_values.append(y.max().item())
+    best_so_far = float(y.max())
+    best_kpi_values.append(best_so_far)
+
+
+#plot
+plt.plot(range(1, ROUNDS + 1), best_kpi_values, marker='o')
+plt.ylim(min(best_kpi_values) - 0.1, max(best_kpi_values) + 0.1)
+plt.xlabel('Optimization Round')
+plt.ylabel('Best EFE_m Production (KPI)')
+plt.title('Improvement of EFE_m Production Over Optimization Rounds')
+plt.grid(True)
+plt.show()
 
 print(x)
 print(y)
-print(f"Medium:", model.medium)
-
-# Plot the improvement of the KPI over the rounds
-plt.plot(range(1, ROUNDS + 1), best_kpi_values, marker='o')
-plt.xlabel('Optimization Round')
-plt.ylabel('Maximum theoretical growth')
-plt.title('Improvement of u_max of Vibrio Over Optimization Rounds')
-plt.grid(True)
-plt.show()
+print(f"Best KPI values:", best_kpi_values)
