@@ -23,7 +23,7 @@ BOUNDS = torch.tensor([BOUNDS_temp, BOUNDS_time])
 D = len(variables)
 Q=3
 
-ROUNDS = 2
+ROUNDS = 3
 SEED = 12345
 torch.manual_seed(seed=SEED)
 bounds_tensor = torch.tensor(BOUNDS, dtype=torch.float64).T  
