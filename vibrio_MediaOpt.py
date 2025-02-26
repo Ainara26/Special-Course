@@ -67,18 +67,12 @@ fit_gpytorch_mll(mll)
 
 best_kpi_values=[]
 #Define and Optimize acquisition function
-    #define
 sampler=SobolQMCNormalSampler(torch.Size([Q]),seed=SEED)
 qlei = qLogExpectedImprovement(
         model=gp_model,
         best_f=y.max(),
         sampler=sampler,
         )
-
-    #optimize to find the next batch of experiments
-
-
-#__import__("pdb").set_trace()
 
 #Update data with the new rounds
 for round_num in range(ROUNDS):
