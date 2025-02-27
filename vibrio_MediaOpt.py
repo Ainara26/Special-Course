@@ -17,17 +17,43 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 model = read_sbml_model('C:/Users/Ainara/Documents/GitHub/Special-Course/models/iLC858.sbml')
 
 #Define the Search Space
-MEDIA = model.medium
-MEDIA['EX_Na+_e'] = 20.0
-MEDIA['EX_Acetate_e']=2.5
-MEDIA['EX_NH3_e']=1.0
-MEDIA['EX_K+_e']=0.2
-MEDIA['EX_Mg_e']=0.2
+# Get all exchange reactions available in the model
+exchange_reactions = [rxn.id for rxn in model.exchanges]
 
-BOUNDS = [(0.0, 10*value) for value in MEDIA.values()]
+# Initialize a new medium with only the desired components (if they exist)
+new_medium = {}
 
+# Define desired nutrients and their concentrations
+custom_medium = {
+    'EX_cpd00099_e': 64.8, #clhoride
+    'EX_cpd00971_e': 91.6, #sodium
+    'EX_cpd00048_e': 121.0, #sulfate
+    'EX_cpd00205_e': 136.3, #potassium
+    'EX_cpd00063_e': 0.2, #calcium
+    'EX_cpd00149_e': 0.1, #carbonate
+    'EX_cpd00254_e': 121.6, #magnesium
+    'EX_cpd00029_e': 82.0, #acetate
+    'EX_cpd00013_e': 53.5, #ammonium
+    'EX_cpd00012_e': 136.1, #H2PO4
+    'EX_cpd00305_e': 0.014, #thiamine/vit B1
+    'EX_cpd00635_e': 0.0007378, #vit B12
+    'EX_cpd00028_e': 0.010790591 #iron
+}
+
+# Only add nutrients that exist as exchange reactions in the model
+for nutrient, concentration in custom_medium.items():
+    if nutrient in exchange_reactions:
+        new_medium[nutrient] = concentration
+    else:
+        print(f"Warning: {nutrient} not found in model exchange reactions.")
+
+# Update the model's medium
+model.medium = new_medium
+
+# Define bounds dynamically based on the new medium
+BOUNDS = [(0.001, 10 * value) for value in new_medium.values()]
 Q=12
-D=len(MEDIA)
+D=len(new_medium)
 ROUNDS = 2
 SEED = 12345
 torch.manual_seed(SEED)
