@@ -78,7 +78,7 @@ for round_num in range(ROUNDS):
     y = torch.concat([y, next_y], dim=0)
 
     
-    # Track the best KPI value (the highest EFE_m production) for this round
+    # Track the best KPI value (the highest cookie quality) for this round
     best_kpi_values.append(y.max().item())
 
 last_x=x[-1]
